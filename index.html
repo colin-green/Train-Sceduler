@@ -14,6 +14,58 @@
     <title>Train Scheduler</title>
 </head>
 <body>
+
+    <!-- Overall Container -->
+    <div class="container">
+
+        <!-- Header -->
+        <h1>Train Scheduler</h1>
+
+        <!-- First row (Train table) -->
+        <div class="row" id="row-1">
+            <div id="title"><u>Current Train Schedule</u></div>
+                <table class="table table-striped table-dark">
+                    <thead>
+                        <tr>
+                        <th scope="col">Train Name</th>
+                        <th scope="col">Destination</th>
+                        <th scope="col">Frequency (min)</th>
+                        <th scope="col">Next Arrival</th>
+                        <th scope="col">Minutes Away</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    </table>
+        </div>
+
+        <!-- Second Row (New Train form title) -->
+        <div class="row" id="row-2">
+            <div id="title"><u>Add New Train</u></div>
+        </div>
+
+        <!-- Third Row (New Train form) -->
+        <div class="row" id="row-3">
+            <form>
+                <div class="form-group">
+                    <label for="trainName">Train Name</label>
+                    <input type="text" class="form-control" id="trainName" aria-describedby="emailHelp">
+                </div>
+                <div class="form-group">
+                    <label for="destination">Destination</label>
+                    <input type="text" class="form-control" id="destination">
+                </div>
+                <div class="form-group">
+                    <label for="firstTrainTime">First Train Time (HH:mm - Military Time)</label>
+                    <input type="text" class="form-control" id="firstTrainTime" aria-describedby="emailHelp">
+                </div>
+                <div class="form-group">
+                    <label for="frequency">Frequency (minutes)</label>
+                    <input type="text" class="form-control" id="frequency">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
     
     <!-- jQuery -->
     <script

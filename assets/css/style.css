@@ -1,0 +1,19 @@
+h1 {
+    text-align: center;
+    background-color: green;
+    color: lightyellow;
+    padding: 20px 0 20px 0;
+    margin-top: 20px;
+    border: solid 4px black;
+    align-content: center;
+}
+
+#title {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#row-1, #row-2 {
+    margin-top: 50px;
+}
+
