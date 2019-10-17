@@ -47,7 +47,7 @@ function databaseInit() {
 
         } else {
 
-                    // For loop?
+        // For loop?
         for (let i = 1; i < snapshot.val().trains.length; i++) {
 
             // Send this new object to firebase
