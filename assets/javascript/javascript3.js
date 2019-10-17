@@ -16,10 +16,6 @@ var firebaseConfig = {
 // Make a variable that references the firebase database (for ease of use)
 var database = firebase.database();
 
-databaseInit();
-
-$("button").click(addTrain);
-
 function databaseInit() {
 
     database.ref().on("value", function(snapshot) {
@@ -29,6 +25,7 @@ function databaseInit() {
   
         // If the database is empty, make trainCounter = 0
         if (snapshot.val() == null) {
+            
             trainCounter = 0;
 
         // Else, make trainCounter equal to the database trainCounter
@@ -47,18 +44,33 @@ function databaseInit() {
 
         } else {
 
-                    // For loop?
+        // For loop?
         for (let i = 1; i < snapshot.val().trains.length; i++) {
 
+            var snapshotFrequency = snapshot.val().trains[i].frequency;
+
+            // Getting hours/minutes of user input to help with moment.js formatting
+            var firstTrainTimeHours = snapshot.val().trains[i].firstTrainTime[0] + snapshot.val().trains[i].firstTrainTime[1];
+            var firstTrainTimeMinutes = snapshot.val().trains[i].firstTrainTime[3] + snapshot.val().trains[i].firstTrainTime[4];
+
+            // Turning the newTrain.firstTrainTime variable into a moment that only shows the time
+            var firstTrainTimeMoment = moment().hour(firstTrainTimeHours).minute(firstTrainTimeMinutes).second("00");
+
+            // Calling the "nextArrival" function I defined below
+            var nextArrivalTime = nextArrival(firstTrainTimeMoment, snapshotFrequency);
+
+            // Make a new object property called "minutesAway" and assign it using the function I defined below
+            var timeUntilNextTrain = minutesAway(nextArrivalTime);
+
+            // Format the nextArrival variable to be a pretty string instead of an ugly object
+            nextArrivalTime = nextArrivalTime.format('h:mm A');
+
             // Send this new object to firebase
-            database.ref(`trains/${i}`).set({
-            trainName: snapshot.val().trains[i].trainName,
-            destination: snapshot.val().trains[i].destination,
-            firstTrainTime: snapshot.val().trains[i].firstTrainTime,
-            firstTrainTimeMoment: snapshot.val().trains[i].firstTrainTimeMoment,
-            nextArrival: nextArrival(snapshot.val().trains[i].firstTrainTimeMoment, snapshot.val().trains[i].frequency),
-            frequency: snapshot.val().trains[i].frequency,
-            minutesAway: minutesAway(snapshot.val().trains[i].nextArrival)
+            database.ref(`trains/${i}`).update({
+
+            nextArrival: nextArrivalTime,
+            minutesAway: timeUntilNextTrain
+
           });
 
             // Make a new row for the table
@@ -117,7 +129,9 @@ function addTrain() {
     });
 
     if ($("#trainName").val() == '' || $("#destination").val() == '' || $("#firstTrainTime").val() == '' || $("#frequency").val() == '') {
+
         alert("You left something blank! Try again.")
+
     } else {
 
         // Create a newTrain object and assign user input to properties
@@ -126,22 +140,6 @@ function addTrain() {
         newTrain.destination = $("#destination").val();
         newTrain.firstTrainTime = $("#firstTrainTime").val();
         newTrain.frequency = $("#frequency").val();
-
-        // Getting hours/minutes of user input to help with moment.js formatting
-        var firstTrainTimeHours = newTrain.firstTrainTime[0] + newTrain.firstTrainTime[1];
-        var firstTrainTimeMinutes = newTrain.firstTrainTime[3] + newTrain.firstTrainTime[4];
-
-        // Turning the newTrain.firstTrainTime variable into a moment that only shows the time
-        newTrain.firstTrainTimeMoment = moment().hour(firstTrainTimeHours).minute(firstTrainTimeMinutes).second("00");
-
-        // Calling the "nextArrival" function I defined below
-        newTrain.nextArrival = nextArrival(newTrain.firstTrainTimeMoment, newTrain.frequency);
-
-        // Make a new object property called "minutesAway" and assign it using the function I defined below
-        newTrain.minutesAway = minutesAway(newTrain.nextArrival);
-
-        // Format the nextArrival variable to be a pretty string instead of an ugly object
-        newTrain.nextArrival = newTrain.nextArrival.format('h:mm A');
 
         // Clear fields after submit
         $("#trainName").val('');
@@ -154,13 +152,12 @@ function addTrain() {
 
         // Send this new object to firebase
         database.ref(`trains/${trainCounter}`).set({
+
             trainName: newTrain.trainName,
             destination: newTrain.destination,
-            firstTrainTime: newTrain.firstTrainTime,
-            firstTrainTimeMoment: newTrain.firstTrainTimeMoment,
-            nextArrival: newTrain.nextArrival,
             frequency: newTrain.frequency,
-            minutesAway: newTrain.minutesAway
+            firstTrainTime: newTrain.firstTrainTime
+
           });
 
     }
@@ -183,6 +180,7 @@ function nextArrival(firstTrainTime, frequency) {
     }
 
     return nextArrival;
+
 }
 
 function minutesAway(nextArrival) {
@@ -192,4 +190,9 @@ function minutesAway(nextArrival) {
 
     // Moment already has a useful function for what we're trying to do
     return nextArrival.fromNow(currentTime);
+
 }
+
+databaseInit();
+
+$("button").click(addTrain);
