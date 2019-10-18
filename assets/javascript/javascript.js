@@ -16,185 +16,94 @@ var firebaseConfig = {
 // Make a variable that references the firebase database (for ease of use)
 var database = firebase.database();
 
-// Make a trainCounter variable
-var trainCounter;
+// When the button is clicked...
+$('button').on("click", function() {
 
-databaseInit();
-databaseTablePop();
-
-// When you click the submit button...
-$("button").click(function(event) {
-
-    // Prevent page from refreshing
+  // Prevent page from refreshing
     event.preventDefault();
 
-    if ($("#trainName").val() == '' || $("#destination").val() == '' || $("#firstTrainTime").val() == '' || $("#frequency").val() == '') {
-        alert("You left something blank! Try again.")
-    } else {
+    // Takes the user's input
+  var trainName = $("#trainName").val().trim();
+  var destination = $("#destination").val().trim();
+  var firstTrainTime = moment($("#firstTrainTime").val().trim(), "HH:mm").format("HH:mm");
+  var frequency = $("#frequency").val().trim();
 
-        // Create a newTrain object and assign user input to properties
-        var newTrain = {};
-        newTrain.trainName = $("#trainName").val();
-        newTrain.destination = $("#destination").val();
-        newTrain.firstTrainTime = $("#firstTrainTime").val();
-        newTrain.frequency = $("#frequency").val();
+  // Creates local temporary object to hold train data
+  var newTrain = {
+    name: trainName,
+    destination: destination,
+    firstTrainTime: firstTrainTime,
+    frequency: frequency
+  }
 
-        // Getting hours/minutes of user input to help with moment.js formatting
-        var firstTrainTimeHours = newTrain.firstTrainTime[0] + newTrain.firstTrainTime[1];
-        var firstTrainTimeMinutes = newTrain.firstTrainTime[3] + newTrain.firstTrainTime[4];
+  console.log(newTrain);
 
-        // Turning the newTrain.firstTrainTime variable into a moment that only shows the time
-        newTrain.firstTrainTime = moment().hour(firstTrainTimeHours).minute(firstTrainTimeMinutes);
+    // uploads train data to the database
+    database.ref("Trains").push(newTrain);
+    // clears all the text-boxes
+    $("#trainName").val("");
+    $("#destination").val("");
+    $("#firstTrainTime").val("");
+    $("#frequency").val("");
 
-        // Calling the "nextArrival" function I defined below
-        nextArrival(newTrain.firstTrainTime, newTrain.frequency);
-
-        // Increment the trainCounter variable locally
-        trainCounter++;
-
-        // Update the trainCounter in the database
-        database.ref().update({
-            trainCounter: trainCounter
-        });
-
-        // Store the user input into a new train object in the database
-        database.ref(`trains/${trainCounter}`).set({
-            trainName: newTrain.trainName,
-            destination: newTrain.destination,
-            firstTrainTime: newTrain.firstTrainTime,
-            frequency: newTrain.frequency
-          });
-
-        // Clear fields after submit
-        $("#trainName").val('');
-        $("#destination").val('');
-        $("#firstTrainTime").val('');
-        $("#frequency").val('');
-
-        // Make a new row for the table
-        var newTableRow = $("<tr>");
-
-        // Append it to the table body
-        newTableRow.appendTo($("tbody"));
-
-        // Make variables for all the new table data cells
-        var tableTrainName = $("<td>");
-        var tableDestination = $("<td>");
-        var tableFirstTrainTime = $("<td>");
-        var tableFrequency = $("<td>");
-        var tableMinutesAway = $("<td>");
-
-        // Update the html in the variables to match the user input
-        tableTrainName.html(newTrain.trainName);
-        tableDestination.html(newTrain.destination);
-        tableFirstTrainTime.html(newTrain.firstTrainTime.format('h:mm A'));
-        tableFrequency.html(newTrain.frequency);
-        // Here's where I call the "minutesAway" function I defined below
-        tableMinutesAway.html(minutesAway(newTrain.firstTrainTime));
-
-        // Append the table data cells to the new table row
-        newTableRow.append(tableTrainName);
-        newTableRow.append(tableDestination);
-        newTableRow.append(tableFrequency);
-        newTableRow.append(tableFirstTrainTime);
-        newTableRow.append(tableMinutesAway);
-    }
 })
 
-function nextArrival(firstTrainTime, frequency) {
-    
-    // Set variable for current time
-    var currentTime = moment();
+// When a new train is added...
+database.ref("Trains").on("child_added", function(childSnapshot) {
 
-    // Set variable for "next arrival" (it starts as the user-inputted first train time)
-    var nextArrival = firstTrainTime;
+    console.log(childSnapshot.val());
 
-    // While "next arrival" is before the current time, add minutes equal to the "frequency"
-    while (nextArrival.isBefore(currentTime)) {
+    // Store the childSnapshot values into variables
+    var trainName = childSnapshot.val().name;
+    var destination = childSnapshot.val().destination;
+    var firstTrain = childSnapshot.val().firstTrainTime;
+    var frequency = childSnapshot.val().frequency;
 
-        nextArrival = nextArrival.add(frequency, 'minutes');
+    var firstTimeConverted = moment(firstTrain, "HH:mm");
+    console.log(firstTimeConverted);
 
-    }
+    var currentTime = moment().format("HH:mm");
 
-    return nextArrival.format('h:mm A');
-}
+    // Store the difference between currentTime and fisrt train time
+    var timeDiff = moment().diff(moment(firstTimeConverted), "minutes");
+    console.log(firstTrain);
+    console.log("Difference in Time: " + timeDiff + " minutes");
 
-function minutesAway(nextArrival) {
+    // Find the remainder of the time left
+    var timeRemainder = timeDiff % frequency;
+    console.log("Time remainder: " + timeRemainder + " minutes");
 
-    // Set variable for current time
-    var currentTime = moment();
+    var minToTrain = frequency - timeRemainder;
 
-    // Moment already has a useful function for what we're trying to do
-    return nextArrival.fromNow(currentTime);
-}
+    // Time of the next train
+    var nextTrain = moment().add(minToTrain, "minutes").format("h:mm A");
+    console.log(nextTrain);
 
-function databaseInit() {
+    // Make a new row for the table
+    var newTableRow = $("<tr>");
 
-    // Using .on("value", function(snapshot)) syntax will retrieve the data
-    // from the database (both initially and every time something changes)
-    // This will then store the data inside the variable "snapshot". We could rename "snapshot" to anything.
-    database.ref().on("value", function(snapshot) {
+    // Append it to the table body
+    newTableRow.appendTo($("tbody"));
 
-        // Then we console.log the value of snapshot
-        console.log(snapshot.val());
-  
-        // If the database is empty, make trainCounter = 0
-        if (snapshot.val() == null) {
-            trainCounter = 0;
+    // Make variables for all the new table data cells
+    var tableTrainName = $("<td>");
+    var tableDestination = $("<td>");
+    var tableNextArrival = $("<td>");
+    var tableFrequency = $("<td>");
+    var tableMinutesAway = $("<td>");
 
-        // Else, make trainCounter equal to the database trainCounter
-        } else {
-            trainCounter = snapshot.val().trainCounter;
-        }
+    // Update the html in the variables to match the user input
+  tableTrainName.html(trainName);
+  tableDestination.html(destination);
+  tableNextArrival.html(nextTrain);
+  tableFrequency.html(frequency);
+  tableMinutesAway.html(minToTrain + " minutes");
 
-        // Update the database with the new local trainCounter variable
-        database.ref().update({
-            trainCounter: trainCounter
-        });
-  
-        // If there is an error that Firebase runs into -- it will be stored in the "errorObject"
-      }, function(errorObject) {
-  
-        // In case of error this will print the error
-        console.log("The read failed: " + errorObject.code);
-      });
+  // Append the table data cells to the new table row
+  newTableRow.append(tableTrainName);
+  newTableRow.append(tableDestination);
+  newTableRow.append(tableFrequency);
+  newTableRow.append(tableNextArrival);
+  newTableRow.append(tableMinutesAway);
 
-}
-
-function databaseTablePop() {
-
-    database.ref().on("value", function(snapshot) {
-
-        // Make a new row for the table
-        var newTableRow = $("<tr>");
-
-        // Append it to the table body
-        newTableRow.appendTo($("tbody"));
-
-        // Make variables for all the new table data cells
-        var tableTrainName = $("<td>");
-        var tableDestination = $("<td>");
-        var tableFirstTrainTime = $("<td>");
-        var tableFrequency = $("<td>");
-        var tableMinutesAway = $("<td>");
-        
-        // Update the html in the variables to match the user input
-        tableTrainName.html(snapshot.val().trains[1].trainName);
-        tableDestination.html(snapshot.val().trains[1].destination);
-        tableFirstTrainTime.html(snapshot.val().trains[1].firstTrainTime);
-        tableFrequency.html(snapshot.val().trains[1].frequency);
-        // Here's where I call the "minutesAway" function I defined below
-        tableMinutesAway.html("0");
-
-        // Append the table data cells to the new table row
-        newTableRow.append(tableTrainName);
-        newTableRow.append(tableDestination);
-        newTableRow.append(tableFrequency);
-        newTableRow.append(tableFirstTrainTime);
-        newTableRow.append(tableMinutesAway);
-
-        console.log();
-
-    })
-
-}
+})
