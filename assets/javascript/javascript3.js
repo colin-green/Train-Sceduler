@@ -193,6 +193,6 @@ function minutesAway(nextArrival) {
 
 }
 
-databaseInit();
-
 $("button").click(addTrain);
+
+databaseInit();
