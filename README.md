@@ -1,4 +1,4 @@
 # Train-Scheduler
-Firebase Homework (Week 7)
+A train scheduler that uses Google's Firebase to store the train information. Try adding some trains!
 
 Page: https://colin-green.github.io/Train-Scheduler
